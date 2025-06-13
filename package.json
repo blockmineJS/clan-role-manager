@@ -1,0 +1,13 @@
+{
+  "name": "clan-role-manager",
+  "version": "1.0.0",
+  "description": "Автоматически выдает и забирает роль 'Member' при входе/выходе из клана.",
+  "main": "index.js",
+  "author": "blockmineJS",
+  "botpanel": {
+    "dependencies": {
+      "parser-keksik": "*",
+      "clan-events-keksik": "*"
+    }
+  }
+}
