@@ -67,14 +67,10 @@ module.exports = (bot, options) => {
         if (!username || checkedUsersInClanChat.has(username.toLowerCase())) return;
 
         try {
-            const user = await bot.api.getUser(username);
-            if (!user.hasGroup(GROUP_NAME_MEMBER) && !user.hasGroup(GROUP_NAME_ADMIN)) {
-                log(`[ClanRoleManager] Обнаружен игрок ${username} в клан-чате без роли. Выдаем...`);
-                await grantMemberRole(username);
-            }
+            await grantMemberRole(username);
             checkedUsersInClanChat.add(username.toLowerCase());
         } catch (error) {
-            log(`[ClanRoleManager] Ошибка при проверке роли в клан-чате для ${username}: ${error.message}`);
+            log(`[ClanRoleManager] Ошибка при проверке/выдаче роли в клан-чате для ${username}: ${error.message}`);
         }
     };
 
