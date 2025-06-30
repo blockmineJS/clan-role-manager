@@ -5,6 +5,14 @@ module.exports = (bot, options) => {
     const PLUGIN_OWNER_ID = 'plugin:clan-role-manager';
     const checkedUsersInClanChat = new Set();
 
+    if (bot.clanRoleManagerListeners) {
+        bot.events.removeListener('clan:player_joined', bot.clanRoleManagerListeners.onPlayerJoined);
+        bot.events.removeListener('clan:player_left', bot.clanRoleManagerListeners.onPlayerLeft);
+        bot.events.removeListener('clan:player_kicked', bot.clanRoleManagerListeners.onPlayerLeft);
+        bot.events.removeListener('chat:message', bot.clanRoleManagerListeners.onChatMessage);
+        log('[ClanRoleManager] Старые обработчики событий удалены для перезагрузки.');
+    }
+
     async function setupRolesAndPermissions() {
         try {
             log('[ClanRoleManager] Регистрация прав и групп...');
@@ -59,35 +67,38 @@ module.exports = (bot, options) => {
         }
     }
     
-    const onPlayerJoined = (data) => data.username && grantMemberRole(data.username);
-    const onPlayerLeft = (data) => data.username && revokeMemberRole(data.username);
+    bot.clanRoleManagerListeners = {
+        onPlayerJoined: (data) => data.username && grantMemberRole(data.username),
+        onPlayerLeft: (data) => data.username && revokeMemberRole(data.username),
+        onChatMessage: async (data) => {
+            if (data.type !== 'clan') return;
+            
+            const { username } = data;
+            if (!username || checkedUsersInClanChat.has(username.toLowerCase())) return;
 
-    const onClanMessage = async (data) => {
-        const { username } = data;
-        if (!username || checkedUsersInClanChat.has(username.toLowerCase())) return;
-
-        try {
-            await grantMemberRole(username);
-            checkedUsersInClanChat.add(username.toLowerCase());
-        } catch (error) {
-            log(`[ClanRoleManager] Ошибка при проверке/выдаче роли в клан-чате для ${username}: ${error.message}`);
+            try {
+                await grantMemberRole(username);
+                checkedUsersInClanChat.add(username.toLowerCase());
+            } catch (error) {
+                log(`[ClanRoleManager] Ошибка при проверке/выдаче роли в клан-чате для ${username}: ${error.message}`);
+            }
         }
     };
 
-    bot.events.on('clan:player_joined', onPlayerJoined);
-    bot.events.on('clan:player_left', onPlayerLeft);
-    bot.events.on('clan:player_kicked', onPlayerLeft);
-    bot.events.on('chat:message', (data) => {
-        if (data.type === 'clan') {
-            onClanMessage(data);
-        }
-    });
+    bot.events.on('clan:player_joined', bot.clanRoleManagerListeners.onPlayerJoined);
+    bot.events.on('clan:player_left', bot.clanRoleManagerListeners.onPlayerLeft);
+    bot.events.on('clan:player_kicked', bot.clanRoleManagerListeners.onPlayerLeft);
+    bot.events.on('chat:message', bot.clanRoleManagerListeners.onChatMessage);
 
     bot.once('end', () => {
-        bot.events.removeListener('clan:player_joined', onPlayerJoined);
-        bot.events.removeListener('clan:player_left', onPlayerLeft);
-        bot.events.removeListener('clan:player_kicked', onPlayerLeft);
-        log('[ClanRoleManager] Плагин выгружен, слушатели событий отключены.');
+        if (bot.clanRoleManagerListeners) {
+            bot.events.removeListener('clan:player_joined', bot.clanRoleManagerListeners.onPlayerJoined);
+            bot.events.removeListener('clan:player_left', bot.clanRoleManagerListeners.onPlayerLeft);
+            bot.events.removeListener('clan:player_kicked', bot.clanRoleManagerListeners.onPlayerLeft);
+            bot.events.removeListener('chat:message', bot.clanRoleManagerListeners.onChatMessage);
+            delete bot.clanRoleManagerListeners;
+            log('[ClanRoleManager] Плагин выгружен, слушатели событий отключены.');
+        }
     });
 
     log('[ClanRoleManager] Плагин управления ролями клана загружен и готов к работе.');
