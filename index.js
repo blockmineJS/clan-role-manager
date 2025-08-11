@@ -44,10 +44,6 @@ module.exports = (bot, options) => {
     async function grantMemberRole(username) {
         try {
             const user = await bot.api.getUser(username);
-            if (user.hasGroup(GROUP_NAME_ADMIN)) {
-                log(`[ClanRoleManager] Пользователь ${username} является админом, роль Member не выдается.`);
-                return;
-            }
             if (user.hasGroup(GROUP_NAME_MEMBER)) return;
             await user.addGroup(GROUP_NAME_MEMBER);
             log(`[ClanRoleManager] Пользователю ${username} выдана роль ${GROUP_NAME_MEMBER}.`);
